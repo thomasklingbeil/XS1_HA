@@ -1,5 +1,5 @@
 # XS1_HA
-XS1 component for Home Assistant
+EZcontrol® XS1 component for Home Assistant
 
 # Work in progress
 This component is in its baby shoes and in no way meant to be used in production.
