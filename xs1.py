@@ -2,111 +2,79 @@ import logging
 import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
 
-import requests
-import json
+from homeassistant.helpers import discovery
+from homeassistant.const import (CONF_HOST, CONF_NAME)
+from homeassistant.helpers.entity import Entity
+
+# logging
+import pprint
+import time
+
+REQUIREMENTS = ['xs1-api-client==1.0.1']
 
 _LOGGER = logging.getLogger(__name__)
 
 DOMAIN = 'xs1'
+ACTUATORS = 'actuators'
+SENSORS = 'sensors'
 
 # configuration keys
-KEY_HOST = 'host'
-KEY_USER = 'user'
-KEY_PASSWORD = 'password'
-
-# configuration values
-HOST = ''
-USER = ''
-PASSWORD = ''
+CONF_USER = 'user'
+CONF_PASSWORD = 'password'
 
 # define configuration parameters
 CONFIG_SCHEMA = vol.Schema({
     DOMAIN: vol.Schema({
-        vol.Required(KEY_HOST): cv.string
+        vol.Required(CONF_HOST): cv.string,
+        vol.Optional(CONF_USER): cv.string,
+        vol.Optional(CONF_PASSWORD): cv.string
     }),
 }, extra=vol.ALLOW_EXTRA)
 
+XS1_COMPONENTS = [
+    'switch',
+    'sensor',
+    'climate'
+]
 
-# XS1 API commands
-COMMAND_GET_LIST_ACTUATORS = 'get_list_actuators'
-COMMAND_GET_LIST_SENSORS = 'get_list_sensors'
 
 def setup(hass, config):
-    # read configuration
-    global HOST
-    global USER
-    global PASSWORD
-    
-    HOST = config[DOMAIN].get(KEY_HOST)
-    USER = config[DOMAIN].get(KEY_USER, '')
-    PASSWORD = config[DOMAIN].get(KEY_PASSWORD, '')
-    
-    # set host
-    hass.states.set('xs1.host', HOST)
-    
-    initializeActuators(hass);
-    
-    initializeSensors(hass);
+    """Set up XS1 Component"""
+    _LOGGER.info("initializing XS1")
+
+    host = config[DOMAIN].get(CONF_HOST)
+    user = config[DOMAIN].get(CONF_USER)
+    password = config[DOMAIN].get(CONF_PASSWORD)
+
+    # initialize XS1 API
+    import xs1_api_client
+    xs1 = xs1_api_client.XS1(host, user, password)
+
+    _LOGGER.info("establishing connection to xs1 gateway and retrieving data...")
+
+    hass.data[DOMAIN] = {}
+    hass.data[DOMAIN][ACTUATORS] = xs1.get_all_actuators()
+    hass.data[DOMAIN][SENSORS] = xs1.get_all_sensors()
+
+    _LOGGER.info("loading sensor and switch components...")
+    # load components for supported devices
+    for component in XS1_COMPONENTS:
+        discovery.load_platform(hass, component, DOMAIN, {}, config)
 
     return True
 
-"""
-Requests the list of actuators and updates their status on home assistant
-"""
-def initializeActuators(hass):
-    actuators = sendRequest(COMMAND_GET_LIST_ACTUATORS)
-    
-    for actuator in actuators['actuator']:
-        name = actuator['name']
-        id = actuator['id']
-        type = actuator['type']
-        value = actuator['value']
-        newValue = actuator['newvalue']
-        unit = actuator['unit']
-        
-        if type != 'disabled':
-            hass.states.set('xs1.actuator_' + str(id) + '_' + str(name), str(value))
-        
-        
-"""
-Requests the list of sensors and updates their status on home assistant
-"""
-def initializeSensors(hass):
-    sensors = sendRequest(COMMAND_GET_LIST_SENSORS)
-    
-    for sensor in sensors['sensor']:
-        name = sensor['name']
-        id = sensor['id']
-        type = sensor['type']
-        value = sensor['value']
-        unit = sensor['unit']
-        timestamp = sensor['utime']
-        
-        if type != 'disabled':
-            hass.states.set('xs1.sensor_' + str(id) + '_' + str(name), str(value))
-    
 
-"""
-Sends a request to the XS1 Gateway and returns the answer as a JSON object
-"""
-def sendRequest(command):
-    # create request url
-    requestURL = 'http://' + HOST + \
-                    '/control?user=' + USER + \
-                    '&pwd=' + PASSWORD + \
-                    '&cmd=' + command + \
-                    '&callback=cname'
-    
-    # make request
-    response = requests.get(requestURL, auth=(USER, PASSWORD))
-    responseText = str(response.text)
-    responseText = responseText[responseText.index('{'):responseText.rindex('}')+1]  # cut out valid json response
-    
-    return json.loads(responseText) # convert to json object
-    
-    
-    
-    
-    
-    
-    
+class XS1Device(Entity):
+    """Representation of a base XS1 device."""
+
+    def __init__(self, device, hass):
+        """Initialize the XS1 device."""
+        self.hass = hass
+        self.device = device
+
+    def update(self):
+        """Fetch new state data for the sensor.
+
+        This is the only method that should fetch new data for Home Assistant.
+        """
+        self.device.update()
