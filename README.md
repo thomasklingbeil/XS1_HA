@@ -4,6 +4,17 @@ EZcontrol® XS1 component for Home Assistant
 # Work in progress
 This component is in its baby shoes and in no way meant to be used in production.
 
+# Configuration
+
+Just add these two lines to your configuration:
+
+    # XS1 Gateway
+    xs1:
+      host: "192.168.2.75"
+      
+The component will connect to the gateway and pick up all device configurations automatically.
+If you change the configuration for a device on the XS1 gateway you currently have to restart home assistant to trigger an update.
+
 # License
     XS1_HA by Markus Ressel
     Copyright (C) 2017  Markus Ressel
