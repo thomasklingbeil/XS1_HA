@@ -1,9 +1,12 @@
+
+
+import asyncio
 import logging
 
 from homeassistant.const import CONF_HOST, TEMP_CELSIUS
 from homeassistant.helpers.entity import Entity
 
-from ..xs1 import XS1Device, DOMAIN, SENSORS
+from ..xs1 import XS1DeviceEntity, DOMAIN, SENSORS
 
 
 #DEPENDENCIES = ['xs1']
@@ -11,7 +14,8 @@ _LOGGER = logging.getLogger(__name__)
 
 SENSOR_TYPES = ['temperature']
 
-def setup_platform(hass, config, add_devices, discovery_info=None):
+@asyncio.coroutine
+def async_setup_platform(hass, config, async_add_devices, discovery_info=None):
     """Setup the sensor platform."""
     
     _LOGGER.info("initializing XS1 Sensor")
@@ -21,10 +25,10 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
     _LOGGER.info("Adding Sensor devices...")
     
     for sensor in sensors:
-        add_devices([XS1Sensor(sensor, hass)])
+        async_add_devices([XS1Sensor(sensor, hass)])
 
 
-class XS1Sensor(XS1Device, Entity):
+class XS1Sensor(XS1DeviceEntity, Entity):
     """Representation of a Sensor."""
 
     def __init__(self, device, hass):

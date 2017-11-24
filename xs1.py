@@ -1,3 +1,7 @@
+
+
+
+import asyncio
 import logging
 import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
@@ -10,7 +14,7 @@ from homeassistant.helpers.entity import Entity
 import pprint
 import time
 
-REQUIREMENTS = ['xs1-api-client==1.0.1']
+REQUIREMENTS = ['xs1-api-client==2.1.3']
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -64,7 +68,7 @@ def setup(hass, config):
     return True
 
 
-class XS1Device(Entity):
+class XS1DeviceEntity(Entity):
     """Representation of a base XS1 device."""
 
     def __init__(self, device, hass):
@@ -72,7 +76,8 @@ class XS1Device(Entity):
         self.hass = hass
         self.device = device
 
-    def update(self):
+    @asyncio.coroutine
+    def async_update(self):
         """Fetch new state data for the sensor.
 
         This is the only method that should fetch new data for Home Assistant.
