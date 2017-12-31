@@ -14,7 +14,8 @@ from homeassistant.util.temperature import convert as convert_temperature
 from homeassistant.components.climate import (
     STATE_AUTO, STATE_COOL, STATE_HEAT, ClimateDevice,
     ATTR_TARGET_TEMP_HIGH, ATTR_TARGET_TEMP_LOW,
-    ATTR_TEMPERATURE)
+    ATTR_TEMPERATURE, SUPPORT_TARGET_TEMPERATURE,
+    SUPPORT_TARGET_TEMPERATURE_HIGH, SUPPORT_TARGET_TEMPERATURE_LOW)
 from homeassistant.const import (
     TEMP_CELSIUS, STATE_ON,
     STATE_OFF, STATE_UNKNOWN)
@@ -22,6 +23,8 @@ from homeassistant.const import (
 # DEPENDENCIES = ['xs1']
 _LOGGER = logging.getLogger(__name__)
 
+SUPPORT_FLAGS = (SUPPORT_TARGET_TEMPERATURE | SUPPORT_TARGET_TEMPERATURE_HIGH | 
+    SUPPORT_TARGET_TEMPERATURE_LOW)
 
 @asyncio.coroutine
 def async_setup_platform(hass, config, async_add_devices, discovery_info=None):
@@ -65,6 +68,11 @@ class XS1ThermostatEntity(XS1DeviceEntity, ClimateDevice):
     def name(self):
         """Return the name of the device if any."""
         return self.device.name()
+
+    @property
+    def supported_features(self):
+        """Return the list of supported features."""
+        return SUPPORT_FLAGS
 
     @property
     def current_temperature(self):
